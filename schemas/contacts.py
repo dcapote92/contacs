@@ -10,3 +10,9 @@ class ContactCreate(BaseModel):
 
 class ContactResponse(ContactCreate):
     id: int
+
+
+class ContactUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
