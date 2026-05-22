@@ -31,3 +31,14 @@ def list_contacts(
     contacts = list(db.scalars(statement).all())
 
     return contacts
+
+
+def get_contact_by_id(
+    db: Session,
+    contact_id: int,
+):
+
+    statement = select(ContactModel).where(ContactModel.id == contact_id)
+    contact = db.scalars(statement).first()
+
+    return contact
