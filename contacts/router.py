@@ -1,5 +1,10 @@
-from fastapi import APIRouter, HTTPException, status
-from contacts.schemas import ContactCreate, ContactResponse, ContactUpdate
+from fastapi import APIRouter, Depends, status, HTTPException
+from sqlalchemy.orm import Session
+
+from database import get_db
+from .schemas import ContactCreate, ContactResponse, ContactUpdate
+from .service import create_contact, list_contacts
+
 
 router = APIRouter(
     prefix="/contacts",
@@ -9,14 +14,19 @@ router = APIRouter(
 fake_db: list[ContactResponse] = []
 
 
+# get all contacts
 @router.get(
     "",
     response_model=list[ContactResponse],
 )
-async def list_contacts():
-    return fake_db
+async def list_contacts_route(
+    db: Session = Depends(get_db),
+):
+    contacts = list_contacts(db=db)
+    return contacts
 
 
+# get contact by id
 @router.get(
     "/{contact_id}",
     response_model=ContactResponse,
@@ -32,24 +42,24 @@ async def get_contact(contact_id: int) -> ContactResponse:
     )
 
 
+# create contact
 @router.post(
     "",
     response_model=ContactResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_contact(contact: ContactCreate) -> ContactResponse:
-    new_contact = ContactResponse(
-        id=len(fake_db) + 1,
-        name=contact.name,
-        email=contact.email,
-        phone=contact.phone,
+async def create_contact_route(
+    data: ContactCreate,
+    db: Session = Depends(get_db),
+):
+    contact = create_contact(
+        db=db,
+        data=data,
     )
-
-    fake_db.append(new_contact)
-
-    return new_contact
+    return contact
 
 
+# delete contact
 @router.delete(
     "/{contact_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -66,6 +76,7 @@ async def delete_contact(contact_id: int):
     )
 
 
+# update contact
 @router.put(
     "/{contact_id}",
     response_model=ContactResponse,
