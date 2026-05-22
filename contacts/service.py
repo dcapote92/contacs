@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import Sequence, select
+from sqlalchemy import select
 
 from .models import ContactModel
 from .schemas import ContactCreate
