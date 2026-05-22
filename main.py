@@ -69,7 +69,7 @@ async def delete_contact(contact_id: int):
 
 
 @app.put(
-    "contacts/{contact_id}",
+    "/contacts/{contact_id}",
     response_model=ContactResponse,
 )
 async def update_contact(contact_id: int, data: ContactUpdate) -> ContactResponse:
