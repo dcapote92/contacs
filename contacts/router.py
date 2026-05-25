@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from .schemas import ContactCreate, ContactResponse, ContactUpdate
-from .service import create_contact, list_contacts
+from .service import create_contact, list_contacts, get_contact_by_id, update_contact, delete_contact
+from .models import ContactModel
 
 
 router = APIRouter(
@@ -11,38 +12,18 @@ router = APIRouter(
     tags=["contacts"],
 )
 
-fake_db: list[ContactResponse] = []
+
+"""
+CRUD stands for Create, Read, Update, Delete.
+These are the four basic operations that can be performed on data in a database or an application.
+C - Create
+R - Read
+U - Update
+D - Delete
+"""
 
 
-# get all contacts
-@router.get(
-    "",
-    response_model=list[ContactResponse],
-)
-async def list_contacts_route(
-    db: Session = Depends(get_db),
-):
-    contacts = list_contacts(db=db)
-    return contacts
-
-
-# get contact by id
-@router.get(
-    "/{contact_id}",
-    response_model=ContactResponse,
-)
-async def get_contact(contact_id: int) -> ContactResponse:
-    for contact in fake_db:
-        if contact.id == contact_id:
-            return contact
-
-    raise HTTPException(
-        status_code=404,
-        detail="Contact not found",
-    )
-
-
-# create contact
+# C
 @router.post(
     "",
     response_model=ContactResponse,
@@ -59,36 +40,78 @@ async def create_contact_route(
     return contact
 
 
-# delete contact
-@router.delete(
-    "/{contact_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+# R
+@router.get(
+    "",
+    response_model=list[ContactResponse],
 )
-async def delete_contact(contact_id: int):
-    for index, contact in enumerate(fake_db):
-        if contact.id == contact_id:
-            fake_db.pop(index)
-            return
+async def list_contacts_route(
+    db: Session = Depends(get_db),
+):
+    contacts = list_contacts(db=db)
+    return contacts
 
-    raise HTTPException(
-        status_code=404,
-        detail="Contact not found",
+
+# R
+@router.get(
+    "/{contact_id}",
+    response_model=ContactResponse,
+)
+async def get_contact_by_id_route(
+    contact_id: int,
+    db: Session = Depends(get_db),
+) -> ContactModel | None:
+    contact = get_contact_by_id(
+        db=db,
+        contact_id=contact_id,
     )
+    if not contact:
+        raise HTTPException(
+            status_code=404,
+            detail="Contact not found",
+        )
+
+    return contact
 
 
-# update contact
+# U
 @router.put(
     "/{contact_id}",
     response_model=ContactResponse,
 )
-async def update_contact(contact_id: int, data: ContactUpdate) -> ContactResponse:
-    for index, contact in enumerate(fake_db):
-        if contact.id == contact_id:
-            updated_contact = contact.model_copy(update=data.model_dump(exclude_unset=True))
-            fake_db[index] = updated_contact
-            return updated_contact
+async def update_contact_route(
+    contact_id: int,
+    data: ContactUpdate,
+    db: Session = Depends(get_db),
+) -> ContactModel:
 
-    raise HTTPException(
-        status_code=404,
-        detail="Contact not found",
+    contact = update_contact(
+        db=db,
+        contact_id=contact_id,
+        data=data,
     )
+    if not contact:
+        raise HTTPException(
+            status_code=404,
+            detail="Contact not found",
+        )
+    return contact
+
+
+# D
+@router.delete(
+    "/{contact_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_contact_route(
+    contact_id: int,
+    db: Session = Depends(get_db),
+):
+    target = delete_contact(db=db, contact_id=contact_id)
+
+    if not target:
+        raise HTTPException(
+            status_code=404,
+            detail="Contact not found",
+        )
+    return target
