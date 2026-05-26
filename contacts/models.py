@@ -11,3 +11,4 @@ class ContactModel(Base):
     name: Mapped[str]
     email: Mapped[str]
     phone: Mapped[str | None]
+    created_at: Mapped[str | None]
