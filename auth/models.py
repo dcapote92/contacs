@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
 
@@ -11,3 +11,8 @@ class UserModel(Base):
         index=True,
     )
     password_hash: Mapped[str]
+
+    contacts = relationship(
+        "ContactModel",
+        back_populates="user",
+    )

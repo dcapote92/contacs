@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from auth.models import UserModel
 from auth.schemas import UserRegister
-from auth.security import hash_password, create_access_token, verify_password
+from core.security import hash_password, create_access_token, verify_password
 
 
 def register_user(

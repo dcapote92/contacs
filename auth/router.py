@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from auth.schemas import TokenResponse, UserLogin, UserRegister
-from auth.service import login_user, register_user
+from .schemas import TokenResponse, UserLogin, UserRegister
+from .service import login_user, register_user
+from ..core.security import get_current_user
+from .models import UserModel
 from database import get_db
 from typing import Any
 
@@ -56,3 +58,11 @@ async def login(
     return TokenResponse(
         access_token=token,
     )
+
+
+@router.get("/me")
+async def me(current_user: UserModel = Depends(get_current_user)) -> dict[str, Any]:
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+    }

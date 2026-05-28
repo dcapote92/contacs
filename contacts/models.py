@@ -1,5 +1,5 @@
-from sqlalchemy import DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 from datetime import datetime, UTC
 
@@ -17,4 +17,10 @@ class ContactModel(Base):
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(UTC),
+    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+
+    user = relationship(
+        "UserModel",
+        back_populates="contacts",
     )

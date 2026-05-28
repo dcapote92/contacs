@@ -6,11 +6,11 @@ from sqlalchemy import pool
 from alembic import context
 
 from database import Base
-from settings import settings
+from core.settings import settings
 
 # IMPORTA TODOS OS MODELS AQUI
-from contacts.models import ContactModel  # type: ignore
-from auth.models import UserModel  # type: ignore
+from contacts.models import ContactModel
+from auth.models import UserModel
 
 config = context.config
 
