@@ -1,14 +1,10 @@
-from fastapi import Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from .models import ContactModel
-from .schemas import ContactCreate, ContactUpdate
+from contacts.models import ContactModel
+from contacts.schemas import ContactCreate, ContactUpdate
 from auth.models import UserModel
-from auth.dependencies import get_current_user
-from typing import Annotated
-
-CurrentUser = Annotated[UserModel, Depends(get_current_user)]
+from core.dependencies import CurrentUser
 
 
 def create_contact(
@@ -35,7 +31,7 @@ def get_contacts(
 ) -> list[ContactModel]:
 
     statement = select(ContactModel).where(
-        ContactModel.user_id == curren_user,
+        ContactModel.user_id == curren_user.id,
     )
     contacts = list(db.scalars(statement).all())
 

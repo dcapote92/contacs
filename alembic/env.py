@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from database import Base
+from core.database import Base
 from core.settings import settings
 
 # IMPORTA TODOS OS MODELS AQUI

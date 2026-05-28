@@ -1,12 +1,8 @@
-from fastapi import APIRouter, Depends, status, HTTPException
-from sqlalchemy.orm import Session
-
-from database import get_db
-from .schemas import ContactCreate, ContactResponse, ContactUpdate
-from .service import create_contact, get_contacts, get_contact_by_id, update_contact, delete_contact
-from .models import ContactModel
-from auth.dependencies import get_current_user
-from auth.models import UserModel
+from fastapi import APIRouter, status, HTTPException
+from contacts.schemas import ContactCreate, ContactResponse, ContactUpdate
+from contacts.service import create_contact, get_contacts, get_contact_by_id, update_contact, delete_contact
+from contacts.models import ContactModel
+from core.dependencies import DBSession, CurrentUser
 
 
 router = APIRouter(
@@ -33,11 +29,13 @@ D - Delete
 )
 async def create_contact_route(
     data: ContactCreate,
-    db: Session = Depends(get_db),
+    current_user: CurrentUser,
+    db: DBSession,
 ):
     contact = create_contact(
         db=db,
         data=data,
+        current_user=current_user,
     )
     return contact
 
@@ -48,10 +46,13 @@ async def create_contact_route(
     response_model=list[ContactResponse],
 )
 async def list_contacts_route(
-    db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: CurrentUser,
+    db: DBSession,
 ):
-    contacts = get_contacts(db=db, curren_user=current_user)
+    contacts = get_contacts(
+        db=db,
+        curren_user=current_user,
+    )
     return contacts
 
 
@@ -62,11 +63,13 @@ async def list_contacts_route(
 )
 async def get_contact_by_id_route(
     contact_id: int,
-    db: Session = Depends(get_db),
+    current_user: CurrentUser,
+    db: DBSession,
 ) -> ContactModel | None:
     contact = get_contact_by_id(
         db=db,
         contact_id=contact_id,
+        current_user=current_user,
     )
     if not contact:
         raise HTTPException(
@@ -85,13 +88,15 @@ async def get_contact_by_id_route(
 async def update_contact_route(
     contact_id: int,
     data: ContactUpdate,
-    db: Session = Depends(get_db),
+    current_user: CurrentUser,
+    db: DBSession,
 ) -> ContactModel:
 
     contact = update_contact(
         db=db,
         contact_id=contact_id,
         data=data,
+        current_user=current_user,
     )
     if not contact:
         raise HTTPException(
@@ -108,9 +113,14 @@ async def update_contact_route(
 )
 async def delete_contact_route(
     contact_id: int,
-    db: Session = Depends(get_db),
+    current_user: CurrentUser,
+    db: DBSession,
 ):
-    target = delete_contact(db=db, contact_id=contact_id)
+    target = delete_contact(
+        db=db,
+        contact_id=contact_id,
+        current_user=current_user,
+    )
 
     if not target:
         raise HTTPException(
