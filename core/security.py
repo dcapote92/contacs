@@ -1,16 +1,10 @@
-from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from datetime import UTC, datetime, timedelta
 from typing import Any
 import jwt
 from pwdlib import PasswordHash
 from core.settings import settings
-from database import get_db
-from auth.models import UserModel
 
 password_hash = PasswordHash.recommended()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def hash_password(password: str) -> str:
@@ -44,31 +38,9 @@ def create_access_token(
     )
 
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-) -> UserModel:
-    try:
-        payload = jwt.decode(  # pyright: ignore[reportUnknownMemberType]
-            token,
-            settings.SECRET_KEY,
-            algorithms="HS256",
-        )
-
-        user_id = int(payload["sub"])
-
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
-    user = db.get(
-        UserModel,
-        user_id,
+def decode_token(token: str):
+    return jwt.decode(  # type: ignore
+        token,
+        settings.SECRET_KEY,
+        algorithms="HS256",
     )
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
-
-    return user
