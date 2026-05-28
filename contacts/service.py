@@ -1,19 +1,25 @@
+from fastapi import Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from .models import ContactModel
 from .schemas import ContactCreate, ContactUpdate
+from auth.models import UserModel
+from auth.dependencies import get_current_user
+from typing import Annotated
+
+CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 
 
 def create_contact(
     db: Session,
     data: ContactCreate,
+    current_user: CurrentUser,
 ) -> ContactModel:
 
     contact = ContactModel(
-        name=data.name,
-        email=data.email,
-        phone=data.phone,
+        **data.model_dump(),
+        user_id=current_user.id,
     )
 
     db.add(contact)
@@ -23,11 +29,14 @@ def create_contact(
     return contact
 
 
-def list_contacts(
+def get_contacts(
     db: Session,
+    curren_user: UserModel,
 ) -> list[ContactModel]:
 
-    statement = select(ContactModel)
+    statement = select(ContactModel).where(
+        ContactModel.user_id == curren_user,
+    )
     contacts = list(db.scalars(statement).all())
 
     return contacts
@@ -36,9 +45,13 @@ def list_contacts(
 def get_contact_by_id(
     db: Session,
     contact_id: int,
+    current_user: CurrentUser,
 ):
 
-    statement = select(ContactModel).where(ContactModel.id == contact_id)
+    statement = select(ContactModel).where(
+        ContactModel.id == contact_id,
+        ContactModel.user_id == current_user.id,
+    )
     contact = db.scalars(statement).first()
 
     return contact
@@ -48,8 +61,13 @@ def update_contact(
     db: Session,
     contact_id: int,
     data: ContactUpdate,
+    current_user: CurrentUser,
 ):
-    contact = get_contact_by_id(db=db, contact_id=contact_id)
+    contact = get_contact_by_id(
+        db=db,
+        contact_id=contact_id,
+        current_user=current_user,
+    )
 
     if not contact:
         return None
@@ -69,8 +87,13 @@ def update_contact(
 def delete_contact(
     db: Session,
     contact_id: int,
+    current_user: CurrentUser,
 ):
-    contact = get_contact_by_id(db=db, contact_id=contact_id)
+    contact = get_contact_by_id(
+        db=db,
+        contact_id=contact_id,
+        current_user=current_user,
+    )
 
     if not contact:
         return None

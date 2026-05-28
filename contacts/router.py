@@ -3,8 +3,10 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from .schemas import ContactCreate, ContactResponse, ContactUpdate
-from .service import create_contact, list_contacts, get_contact_by_id, update_contact, delete_contact
+from .service import create_contact, get_contacts, get_contact_by_id, update_contact, delete_contact
 from .models import ContactModel
+from auth.dependencies import get_current_user
+from auth.models import UserModel
 
 
 router = APIRouter(
@@ -47,8 +49,9 @@ async def create_contact_route(
 )
 async def list_contacts_route(
     db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
-    contacts = list_contacts(db=db)
+    contacts = get_contacts(db=db, curren_user=current_user)
     return contacts
 
 
