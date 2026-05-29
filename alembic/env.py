@@ -8,23 +8,23 @@ from alembic import context
 from core.database import Base
 from core.settings import settings
 
-# IMPORTA TODOS OS MODELS AQUI
-from contacts.models import ContactModel
-from auth.models import UserModel
+# import models to register metadata
+import contacts.models
+import auth.models
 
 config = context.config
 
-# Define DATABASE_URL dinamicamente
+# dinamyc database URL config.
 config.set_main_option(
     "sqlalchemy.url",
     settings.DATABASE_URL,
 )
 
 # Logging
-if config.config_file_name is not None:
+if config.config_file_name:
     fileConfig(config.config_file_name)
 
-# Metadata do SQLAlchemy
+
 target_metadata = Base.metadata
 
 

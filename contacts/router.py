@@ -48,10 +48,16 @@ async def create_contact_route(
 async def list_contacts_route(
     current_user: CurrentUser,
     db: DBSession,
-):
-    contacts = get_contacts(
+    skip: int = 0,
+    limit: int = 10,
+    search: str | None = None,
+) -> list[ContactModel]:
+    contacts: list[ContactModel] = get_contacts(
         db=db,
         curren_user=current_user,
+        skip=skip,
+        limit=limit,
+        search=search,
     )
     return contacts
 

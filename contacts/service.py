@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from contacts.models import ContactModel
 from contacts.schemas import ContactCreate, ContactUpdate
@@ -28,11 +28,26 @@ def create_contact(
 def get_contacts(
     db: Session,
     curren_user: UserModel,
+    skip: int = 0,
+    limit: int = 10,
+    search: str | None = None,
 ) -> list[ContactModel]:
 
     statement = select(ContactModel).where(
         ContactModel.user_id == curren_user.id,
     )
+
+    if search:
+        statement = statement.where(
+            or_(
+                ContactModel.name.ilike(f"%{search}%"),
+                ContactModel.email.ilike(f"%{search}%"),
+                ContactModel.phone.ilike(f"%{search}%"),
+            )
+        )
+
+    statement = statement.offset(skip).limit(limit)
+
     contacts = list(db.scalars(statement).all())
 
     return contacts
