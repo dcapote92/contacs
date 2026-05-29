@@ -12,6 +12,13 @@ class ContactResponse(ContactCreate):
     id: int
 
 
+class ContactListResponse(BaseModel):
+    items: list[ContactResponse]
+    total: int
+    skip: int
+    limit: int
+
+
 class ContactUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None

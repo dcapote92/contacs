@@ -1,15 +1,21 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from auth.models import UserModel
 from auth.schemas import UserRegister
-from core.security import hash_password, create_access_token, verify_password
+from core.security import (
+    hash_password,
+    create_access_token,
+    verify_password,
+)
 
 
-def register_user(
-    db: Session,
+async def register_user(
+    db: AsyncSession,
     data: UserRegister,
 ) -> UserModel:
-    existing_user = db.scalar(select(UserModel).where(UserModel.email == data.email))
+    existing_user = await db.scalar(
+        select(UserModel).where(UserModel.email == data.email),
+    )
 
     if existing_user:
         raise ValueError("Email already registered")
@@ -20,19 +26,21 @@ def register_user(
     )
 
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return user
 
 
-def login_user(
-    db: Session,
+async def login_user(
+    db: AsyncSession,
     email: str,
     password: str,
 ) -> str | None:
-    user = db.scalar(select(UserModel).where(UserModel.email == email))
+    user: UserModel | None = await db.scalar(
+        select(UserModel).where(UserModel.email == email),
+    )
 
-    if not user:
+    if user is None:
         return None
 
     if not verify_password(

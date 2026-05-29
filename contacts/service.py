@@ -1,14 +1,15 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import select, or_
-
+from fastapi import HTTPException, status
+from sqlalchemy import select, or_, func
+from sqlalchemy.ext.asyncio import AsyncSession
 from contacts.models import ContactModel
 from contacts.schemas import ContactCreate, ContactUpdate
 from auth.models import UserModel
 from core.dependencies import CurrentUser
+from typing import Any
 
 
-def create_contact(
-    db: Session,
+async def create_contact(
+    db: AsyncSession,
     data: ContactCreate,
     current_user: CurrentUser,
 ) -> ContactModel:
@@ -19,22 +20,22 @@ def create_contact(
     )
 
     db.add(contact)
-    db.commit()
-    db.refresh(contact)
+    await db.commit()
+    await db.refresh(contact)
 
     return contact
 
 
-def get_contacts(
-    db: Session,
-    curren_user: UserModel,
+async def get_contacts(
+    db: AsyncSession,
+    current_user: UserModel,
     skip: int = 0,
     limit: int = 10,
     search: str | None = None,
-) -> list[ContactModel]:
+) -> dict[str, Any]:
 
     statement = select(ContactModel).where(
-        ContactModel.user_id == curren_user.id,
+        ContactModel.user_id == current_user.id,
     )
 
     if search:
@@ -46,15 +47,27 @@ def get_contacts(
             )
         )
 
+    total = await db.scalar(
+        select(func.count()).select_from(
+            statement.subquery(),
+        ),
+    )
+
     statement = statement.offset(skip).limit(limit)
 
-    contacts = list(db.scalars(statement).all())
+    result = await db.execute(statement)
+    contacts: list[ContactModel] = list(result.scalars().all())
 
-    return contacts
+    return {
+        "items": contacts,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
-def get_contact_by_id(
-    db: Session,
+async def get_contact_by_id(
+    db: AsyncSession,
     contact_id: int,
     current_user: CurrentUser,
 ):
@@ -63,25 +76,28 @@ def get_contact_by_id(
         ContactModel.id == contact_id,
         ContactModel.user_id == current_user.id,
     )
-    contact = db.scalars(statement).first()
+    contact = await db.scalars(statement)
 
-    return contact
+    return contact.first()
 
 
-def update_contact(
-    db: Session,
+async def update_contact(
+    db: AsyncSession,
     contact_id: int,
     data: ContactUpdate,
     current_user: CurrentUser,
 ):
-    contact = get_contact_by_id(
+    contact = await get_contact_by_id(
         db=db,
         contact_id=contact_id,
         current_user=current_user,
     )
 
     if not contact:
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contact not found",
+        )
 
     if data.name is not None:
         contact.name = data.name
@@ -90,24 +106,25 @@ def update_contact(
     if data.phone is not None:
         contact.phone = data.phone
 
-    db.commit()
-    db.refresh(contact)
+    await db.commit()
+    await db.refresh(contact)
     return contact
 
 
-def delete_contact(
-    db: Session,
+async def delete_contact(
+    db: AsyncSession,
     contact_id: int,
     current_user: CurrentUser,
 ):
-    contact = get_contact_by_id(
+    contact = await get_contact_by_id(
         db=db,
         contact_id=contact_id,
         current_user=current_user,
     )
 
     if not contact:
-        return None
-    db.delete(contact)
-    db.commit()
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
+
+    await db.delete(contact)
+    await db.commit()
     return {"message": "Contact deleted successfully"}

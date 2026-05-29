@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 from auth.schemas import TokenResponse, UserLogin, UserRegister
 from auth.service import login_user, register_user
 from core.database import get_db
 from typing import Any
-from core.dependencies import CurrentUser
+from core.dependencies import CurrentUser, DBSession
 
 
 router = APIRouter(
@@ -16,10 +16,10 @@ router = APIRouter(
 @router.post("/register")
 async def register(
     data: UserRegister,
-    db: Session = Depends(get_db),
+    db: DBSession,
 ) -> dict[str, Any]:
     try:
-        user = register_user(
+        user = await register_user(
             db=db,
             data=data,
         )
@@ -29,7 +29,7 @@ async def register(
         }
     except ValueError as e:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 
@@ -40,9 +40,9 @@ async def register(
 )
 async def login(
     data: UserLogin,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    token = login_user(
+    token = await login_user(
         db=db,
         email=data.email,
         password=data.password,
