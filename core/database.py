@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import (
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=True,
+    connect_args={
+        "statement_cache_size": 0,
+    },
 )
 
 

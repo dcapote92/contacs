@@ -11,8 +11,8 @@ from core.database import Base
 from core.settings import settings
 
 # Importa os models para registrar metadata
-import contacts.models
-import auth.models
+import contacts.models  # type: ignore
+import auth.models  # type: ignore
 
 
 config = context.config
