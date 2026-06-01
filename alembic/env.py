@@ -1,70 +1,74 @@
 from logging.config import fileConfig
+import asyncio
 
-from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
 from core.database import Base
 from core.settings import settings
 
-# import models to register metadata
+# Importa os models para registrar metadata
 import contacts.models
 import auth.models
 
+
 config = context.config
 
-# dinamyc database URL config.
 config.set_main_option(
     "sqlalchemy.url",
     settings.DATABASE_URL,
 )
 
-# Logging
 if config.config_file_name:
     fileConfig(config.config_file_name)
-
 
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode."""
-
-    url = config.get_main_option("sqlalchemy.url")
+    """Run migrations in offline mode."""
 
     context.configure(
-        url=url,
+        url=settings.DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        render_as_batch=True,  # IMPORTANTE PARA SQLITE
+        render_as_batch=True,
     )
 
     with context.begin_transaction():
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+def do_run_migrations(connection: Connection) -> None:
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        render_as_batch=True,
+    )
 
-    config_section = config.get_section(config.config_ini_section) or {}
+    with context.begin_transaction():
+        context.run_migrations()
 
-    connectable = engine_from_config(
-        config_section,
+
+async def run_async_migrations() -> None:
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section) or {},
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            render_as_batch=True,  # IMPORTANTE PARA SQLITE
-        )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
 
-        with context.begin_transaction():
-            context.run_migrations()
+    await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():
