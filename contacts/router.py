@@ -2,7 +2,8 @@ from fastapi import APIRouter, status, HTTPException
 from contacts.schemas import ContactCreate, ContactResponse, ContactUpdate, ContactListResponse
 from contacts.service import create_contact, get_contacts, get_contact_by_id, update_contact, delete_contact
 from contacts.models import ContactModel
-from core.dependencies import DBSession, CurrentUser
+from core.dependencies import DBSession
+from core.types import CurrentUser, CurrentUserRole
 
 
 router = APIRouter(
@@ -105,7 +106,7 @@ async def update_contact_route(
 )
 async def delete_contact_route(
     contact_id: int,
-    current_user: CurrentUser,
+    current_user: CurrentUserRole,
     db: DBSession,
 ):
     target = await delete_contact(

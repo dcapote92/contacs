@@ -1,13 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import Base
-from enum import Enum
-
-
-class UserRole(str, Enum):
-    ADMIN = ("admin",)
-    MANAGER = ("manager",)
-    AGENT = ("agent",)
-    VIEWER = ("viewer",)
+from auth.enums import UserRole
 
 
 class UserModel(Base):

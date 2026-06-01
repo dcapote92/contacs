@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from contacts.models import ContactModel
 from contacts.schemas import ContactCreate, ContactUpdate
 from auth.models import UserModel
-from core.dependencies import CurrentUser
+from core.types import CurrentUser
 from typing import Any
 
 

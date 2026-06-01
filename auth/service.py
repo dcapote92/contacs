@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from auth.models import UserModel
@@ -7,6 +8,7 @@ from core.security import (
     create_access_token,
     verify_password,
 )
+from auth.enums import UserRole
 
 
 async def register_user(
@@ -20,10 +22,7 @@ async def register_user(
     if existing_user:
         raise ValueError("Email already registered")
 
-    user = UserModel(
-        email=data.email,
-        password_hash=hash_password(data.password),
-    )
+    user = UserModel(email=data.email, password_hash=hash_password(data.password), role=UserRole.AGENT)
 
     db.add(user)
     await db.commit()
@@ -52,3 +51,25 @@ async def login_user(
     return create_access_token(
         user.id,
     )
+
+
+async def update_user_role(
+    db: AsyncSession,
+    user_id: int,
+    role: UserRole,
+):
+    user = await db.get(
+        UserModel,
+        user_id,
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    user.role = role
+    await db.commit()
+    await db.refresh(user)
+    return user

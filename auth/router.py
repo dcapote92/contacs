@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, status
 from auth.schemas import TokenResponse, UserLogin, UserRegister
-from auth.service import login_user, register_user
-from core.database import get_db
+from auth.service import login_user, register_user, update_user_role
 from typing import Any
-from core.dependencies import CurrentUser, DBSession
+from core.dependencies import DBSession
+from core.types import CurrentUser
+from auth.enums import UserRole
 
 
 router = APIRouter(
@@ -40,7 +40,7 @@ async def register(
 )
 async def login(
     data: UserLogin,
-    db: AsyncSession = Depends(get_db),
+    db: DBSession,
 ):
     token = await login_user(
         db=db,
@@ -65,3 +65,16 @@ async def me(current_user: CurrentUser) -> dict[str, Any]:
         "id": current_user.id,
         "email": current_user.email,
     }
+
+
+@router.patch("/users/{user_id}/role")
+async def update_role(
+    user_id: int,
+    role: UserRole,
+    db: DBSession,
+):
+    return await update_user_role(
+        db=db,
+        user_id=user_id,
+        role=role,
+    )
